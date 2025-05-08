@@ -29,28 +29,78 @@ const questions = [
     answer: "Ottawa",
   },
 ];
+const questionsElement = document.getElementById("questions");
+const submitBtn = document.getElementById("submit");
+const scoreElement = document.getElementById("score");
 
-// Display the quiz questions and choices
+// Load progress from session storage (if exists)
+let userAnswers = JSON.parse(sessionStorage.getItem("progress")) || {};
+
+// Display the quiz questions
 function renderQuestions() {
+  questionsElement.innerHTML = "";
+
   for (let i = 0; i < questions.length; i++) {
     const question = questions[i];
-    const questionElement = document.createElement("div");
-    const questionText = document.createTextNode(question.question);
-    questionElement.appendChild(questionText);
+    const questionContainer = document.createElement("div");
+
+    const questionText = document.createElement("p");
+    questionText.textContent = question.question;
+    questionContainer.appendChild(questionText);
+
     for (let j = 0; j < question.choices.length; j++) {
       const choice = question.choices[j];
-      const choiceElement = document.createElement("input");
-      choiceElement.setAttribute("type", "radio");
-      choiceElement.setAttribute("name", `question-${i}`);
-      choiceElement.setAttribute("value", choice);
+
+      const label = document.createElement("label");
+      const choiceInput = document.createElement("input");
+      choiceInput.setAttribute("type", "radio");
+      choiceInput.setAttribute("name", `question-${i}`);
+      choiceInput.setAttribute("value", choice);
+
+      // Restore previously selected answer
       if (userAnswers[i] === choice) {
-        choiceElement.setAttribute("checked", true);
+        choiceInput.checked = true;
       }
-      const choiceText = document.createTextNode(choice);
-      questionElement.appendChild(choiceElement);
-      questionElement.appendChild(choiceText);
+
+		
+      // Save progress on selection
+      choiceInput.addEventListener("change", () => {
+        userAnswers[i] = choice;
+        sessionStorage.setItem("progress", JSON.stringify(userAnswers));
+      });
+
+      label.appendChild(choiceInput);
+      label.appendChild(document.createTextNode(choice));
+      questionContainer.appendChild(label);
+      questionContainer.appendChild(document.createElement("br"));
     }
-    questionsElement.appendChild(questionElement);
+
+    questionsElement.appendChild(questionContainer);
   }
 }
-renderQuestions();
+
+// Handle quiz submission
+submitBtn.addEventListener("click", () => {
+  let score = 0;
+
+  for (let i = 0; i < questions.length; i++) {
+    const correctAnswer = questions[i].answer;
+    if (userAnswers[i] === correctAnswer) {
+      score++;
+    }
+  }
+
+  const resultText = `Your score is ${score} out of ${questions.length}.`;
+  scoreElement.textContent = resultText;
+  localStorage.setItem("score", score);
+});
+
+// Display score if already submitted previously
+window.addEventListener("load", () => {
+  const savedScore = localStorage.getItem("score");
+  if (savedScore !== null) {
+    scoreElement.textContent = `Your score is ${savedScore} out of ${questions.length}.`;
+  }
+
+  renderQuestions();
+});
